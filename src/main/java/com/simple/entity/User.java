@@ -1,6 +1,8 @@
 package com.simple.entity;
 
+import com.simple.annotate.Autowired;
 import com.simple.annotate.Component;
+import com.simple.annotate.Qualifier;
 import com.simple.annotate.Value;
 import lombok.Data;
 
@@ -20,4 +22,7 @@ public class User {
     Date loginTime;
     @Value("127.0.0.1")
     String loginIp;
+    @Autowired
+    @Qualifier("order")
+    private Order order;
 }

@@ -1,7 +1,9 @@
 package com.simple.context;
 
 import com.google.common.base.CaseFormat;
+import com.simple.annotate.Autowired;
 import com.simple.annotate.Component;
+import com.simple.annotate.Qualifier;
 import com.simple.annotate.Value;
 import com.simple.tools.ClassUtil;
 import org.apache.commons.beanutils.ConvertUtils;
@@ -18,7 +20,83 @@ public class AnnotateApplicationContext {
 
     public AnnotateApplicationContext(String pack) {
         Set<BeanDefinition> beanDefinitions = findBeanDefinition(pack);
+        // 创建bean
         createObject(beanDefinitions);
+        // 自动装载
+        autoWireObject(beanDefinitions);
+    }
+
+
+    public void autoWireObject(Set<BeanDefinition> beanDefinitions) {
+
+        Iterator<BeanDefinition> iterator = beanDefinitions.iterator();
+        while (iterator.hasNext()) {
+            BeanDefinition beanDefinition = iterator.next();
+            Class clazz = beanDefinition.getBeanClass();
+            try {
+                // 完成属性的赋值
+                Field[] declaredFields = clazz.getDeclaredFields();
+                for (Field declaredField : declaredFields) {
+                    Autowired autoWiredAnnotation = declaredField.getAnnotation(Autowired.class);
+                    // 有存在@Autowired注解
+                    if (autoWiredAnnotation != null) {
+                        Qualifier qualifierAnnotation = declaredField.getAnnotation(Qualifier.class);
+                        if (qualifierAnnotation != null) {
+                            // byName
+                            Object bean = getBean(qualifierAnnotation.value());
+                            String fieldName = declaredField.getName();
+                            // 赋值
+                            // setFunction
+                            String methodName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+                            Method method = clazz.getMethod(methodName, declaredField.getType());
+                            //  ConvertUtils.convert 数据类型转换
+                            if ("java.util.Date".equals(declaredField.getType().getName())) {
+                                // 处理时间格式
+                                DateConverter dateConverter = new DateConverter();
+                                // 设置日期格式
+                                dateConverter.setPatterns(new String[]{"yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss"});
+                                // 注册格式
+                                ConvertUtils.register(dateConverter, java.util.Date.class);
+                            }
+                            Object object = getBean(beanDefinition.getBeanName());
+                            method.invoke(object, ConvertUtils.convert(bean, declaredField.getType()));
+                        } else {
+                            // byType
+                            System.out.println(">>>>"+clazz+"===="+"declaredField>"+declaredField+"\n"+"属性"+declaredField.getType().getName());
+
+                            String packageName = declaredField.getType().getPackage().getName();
+                            String beanName = CaseFormat.UPPER_CAMEL.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, declaredField.getType().getName());
+                            beanName = beanName.replaceAll(packageName + ".", "");
+                            Object bean = getBean(beanName);
+
+                            System.out.println(beanName+"获取的对象》》》"+bean);
+                            String fieldName = declaredField.getName();
+                            String methodName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+                            Method method = clazz.getMethod(methodName, declaredField.getType());
+
+                            //  ConvertUtils.convert 数据类型转换
+                            if ("java.util.Date".equals(declaredField.getType().getName())) {
+                                // 处理时间格式
+                                DateConverter dateConverter = new DateConverter();
+                                // 设置日期格式
+                                dateConverter.setPatterns(new String[]{"yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss"});
+                                // 注册格式
+                                ConvertUtils.register(dateConverter, java.util.Date.class);
+                            }
+                            Object object = getBean(beanDefinition.getBeanName());
+                            method.invoke(object, ConvertUtils.convert(bean, declaredField.getType()));
+                        }
+                    }
+                }
+
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public Object getBean(String beanName) {
@@ -53,7 +131,7 @@ public class AnnotateApplicationContext {
                             // 处理时间格式
                             DateConverter dateConverter = new DateConverter();
                             // 设置日期格式
-                            dateConverter.setPatterns(new String[]{"yyyy-MM-dd","yyyy-MM-dd HH:mm:ss"});
+                            dateConverter.setPatterns(new String[]{"yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss"});
                             // 注册格式
                             ConvertUtils.register(dateConverter, java.util.Date.class);
                         }
