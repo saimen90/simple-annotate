@@ -16,6 +16,8 @@ public class Order {
     String orderSn;
     @Value("商品名称")
     String title;
-    @Value("2021-02-28 10:10:01")
+    @Value("15.88")
+    float price;
+    @Value("2022-01-01 12:10:06")
     Date createTime;
 }

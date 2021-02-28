@@ -2,9 +2,14 @@ package com.simple.context;
 
 import com.google.common.base.CaseFormat;
 import com.simple.annotate.Component;
+import com.simple.annotate.Value;
 import com.simple.tools.ClassUtil;
+import org.apache.commons.beanutils.ConvertUtils;
+import org.apache.commons.beanutils.converters.DateConverter;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 
 public class AnnotateApplicationContext {
@@ -32,6 +37,33 @@ public class AnnotateApplicationContext {
             // 无参数构建
             try {
                 Object object = clazz.getConstructor().newInstance();
+                // 完成属性的赋值
+                Field[] declaredFields = clazz.getDeclaredFields();
+                for (Field declaredField : declaredFields) {
+                    Value valAnnotation = declaredField.getAnnotation(Value.class);
+                    // 有存在@Value注解
+                    if (valAnnotation != null) {
+                        String value = valAnnotation.value();
+                        String fieldName = declaredField.getName();
+                        // setFunction
+                        String methodName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+                        Method method = clazz.getMethod(methodName, declaredField.getType());
+                        //  ConvertUtils.convert 数据类型转换
+                        if ("java.util.Date".equals(declaredField.getType().getName())) {
+                            // 处理时间格式
+                            DateConverter dateConverter = new DateConverter();
+                            // 设置日期格式
+                            dateConverter.setPatterns(new String[]{"yyyy-MM-dd","yyyy-MM-dd HH:mm:ss"});
+                            // 注册格式
+                            ConvertUtils.register(dateConverter, java.util.Date.class);
+                        }
+                        method.invoke(object, ConvertUtils.convert(value, declaredField.getType()));
+                    }
+                    System.out.println(declaredField);
+                }
+
+
+                // 存入容器
                 ioc.put(beanName, object);
             } catch (InstantiationException e) {
                 e.printStackTrace();

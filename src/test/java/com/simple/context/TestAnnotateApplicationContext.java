@@ -18,5 +18,8 @@ public class TestAnnotateApplicationContext {
         Object user = context.getBean("user");
         System.out.println(user);
 
+
+        Object order = context.getBean("order");
+        System.out.println(order);
     }
 }

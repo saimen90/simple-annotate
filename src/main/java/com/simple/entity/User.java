@@ -16,7 +16,7 @@ public class User {
     String name;
     @Value("123456")
     String password;
-    @Value("2021-02-28 10:10:01")
+    @Value("2021-02-28")
     Date loginTime;
     @Value("127.0.0.1")
     String loginIp;
